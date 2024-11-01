@@ -10,6 +10,11 @@ function Show-ConsoleMenu {
         Write-Host $Header -ForegroundColor Cyan
         Write-Host "==================================="
 
+        # Determine maximum lengths for formatting
+        $maxNameLength = ($MenuOptions.Values | ForEach-Object { $_.Name.Length } | Measure-Object -Maximum).Maximum
+        $maxDescriptionLength = ($MenuOptions.Values | ForEach-Object { $_.Description.Length } | Measure-Object -Maximum).Maximum
+        $statusColumnStart = $maxNameLength + $maxDescriptionLength + 12  # Adjust for formatting
+
         # Display each menu option with indentation, shortcut, name, description, and optional status in order
         $previousIndentLevel = 0
         $menuKeys = $MenuOptions.Keys | Sort-Object  # Get sorted keys for ordered display
@@ -21,19 +26,17 @@ function Show-ConsoleMenu {
             if ($option.ContainsKey('Type') -and $option.Type -eq 'Separator') {
                 # Display separator line or text
                 $indentation = " " * ($option['IndentLevel'] * 4)
-                if ($option.Text -ne "") {
-                    Write-Host "$indentation--- $($option.Text) ---" -ForegroundColor Gray
-                    continue
-                } else {
-                    Write-Host ""
-                    continue
-                }
+                Write-Host "$indentation--- $($option.Text) ---" -ForegroundColor Gray
+                continue
             }
 
             $shortcut = $option['Shortcut']
             $indentation = " " * ($option['IndentLevel'] * 4)  # 4 spaces per indent level
+            $nameAndDescription = "[$shortcut] $($option.Name) - $($option.Description)"
+            $paddingLength = $statusColumnStart - $nameAndDescription.Length - $indentation.Length
+            $padding = if ($paddingLength -gt 0) { " " * $paddingLength } else { "" }
             $status = if ($option.ContainsKey('Status')) { "($($option.Status))" } else { "" }
-            Write-Host "$indentation[$shortcut] $($option.Name) - $($option.Description) $status"
+            Write-Host "$indentation$nameAndDescription$padding$status"
 
             # Check if the next item has a lower indentation to add a space
             if ($i + 1 -lt $menuKeys.Count) {
@@ -107,7 +110,7 @@ $menuOptions = @{
     }
     3 = @{
         Type        = 'Separator'
-        Text        = 'General Options'
+        Text        = 'Section Divider'
         IndentLevel = 0  # No indentation
     }
     4 = @{
@@ -125,21 +128,11 @@ $menuOptions = @{
         }
         IndentLevel = 0  # No indentation
     }
-    5 = @{
-        Type        = 'Separator'
-        Text        = ''
-        IndentLevel = 0  # No indentation
-    }
-    6 = @{
+    'q' = @{
         Shortcut    = 'q'
         Name        = 'Quit'
         Description = 'Exit the menu'
         Function    = { Write-Output "Exiting menu" }
-        IndentLevel = 0  # No indentation
-    }
-    7 = @{
-        Type        = 'Separator'
-        Text        = ''
         IndentLevel = 0  # No indentation
     }
 }
