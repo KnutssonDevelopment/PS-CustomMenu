@@ -10,12 +10,38 @@ function Show-ConsoleMenu {
         Write-Host $Header -ForegroundColor Cyan
         Write-Host "==================================="
 
-        # Display each menu option with the shortcut, name, description, and optional status in order
-        foreach ($index in ($MenuOptions.Keys | Sort-Object)) {
+        # Display each menu option with indentation, shortcut, name, description, and optional status in order
+        $previousIndentLevel = 0
+        $menuKeys = $MenuOptions.Keys | Sort-Object  # Get sorted keys for ordered display
+
+        for ($i = 0; $i -lt $menuKeys.Count; $i++) {
+            $index = $menuKeys[$i]
             $option = $MenuOptions[$index]
+
+            if ($option.ContainsKey('Type') -and $option.Type -eq 'Separator') {
+                # Display separator line or text
+                $indentation = " " * ($option['IndentLevel'] * 4)
+                if ($option.Text -ne "") {
+                    Write-Host "$indentation--- $($option.Text) ---" -ForegroundColor Gray
+                    continue
+                } else {
+                    Write-Host ""
+                    continue
+                }
+            }
+
             $shortcut = $option['Shortcut']
+            $indentation = " " * ($option['IndentLevel'] * 4)  # 4 spaces per indent level
             $status = if ($option.ContainsKey('Status')) { "($($option.Status))" } else { "" }
-            Write-Host "[$shortcut] $($option.Name) - $($option.Description) $status"
+            Write-Host "$indentation[$shortcut] $($option.Name) - $($option.Description) $status"
+
+            # Check if the next item has a lower indentation to add a space
+            if ($i + 1 -lt $menuKeys.Count) {
+                $nextIndentLevel = $MenuOptions[$menuKeys[$i + 1]].IndentLevel
+                if ($nextIndentLevel -lt $option.IndentLevel) {
+                    Write-Host ""  # Add a blank line for visual separation
+                }
+            }
         }
 
         # Prompt user for input
@@ -51,11 +77,11 @@ function Show-ConsoleMenu {
     }
 }
 
-# Example Usage with Indexed Menu Options
+# Example Usage with Indexed Menu Options, Indentation Levels, and a Separator
 $menuOptions = @{
     1 = @{
         Shortcut    = '1'
-        Name        = 'Option 1'
+        Name        = 'Main Option 1'
         Description = 'Run function 1 and update status'
         Function    = {
             param($menuOptions)
@@ -64,10 +90,11 @@ $menuOptions = @{
             return "Status updated to Success"
         }
         Status      = 'Pending'
+        IndentLevel = 0  # No indentation
     }
     2 = @{
         Shortcut    = '2'
-        Name        = 'Option 2'
+        Name        = 'Sub Option 1'
         Description = 'Run function 2 and update status'
         Function    = {
             param($menuOptions)
@@ -76,25 +103,44 @@ $menuOptions = @{
             return "Status updated to Completed"
         }
         Status      = 'Pending'
+        IndentLevel = 1  # Indented once
     }
     3 = @{
+        Type        = 'Separator'
+        Text        = 'General Options'
+        IndentLevel = 0  # No indentation
+    }
+    4 = @{
         Shortcut    = '3'
         Name        = 'Reset Status'
         Description = 'Reset status of all other options to Pending'
         Function    = {
             param($menuOptions)
             foreach ($key in $menuOptions.Keys) {
-                $menuOptions[$key].Status = "Pending"
+                if ($menuOptions[$key].ContainsKey('Status')) {
+                    $menuOptions[$key].Status = "Pending"
+                }
             }
             return "All statuses reset to Pending"
         }
-        Status      = 'Pending'
+        IndentLevel = 0  # No indentation
     }
-    'q' = @{
+    5 = @{
+        Type        = 'Separator'
+        Text        = ''
+        IndentLevel = 0  # No indentation
+    }
+    6 = @{
         Shortcut    = 'q'
         Name        = 'Quit'
         Description = 'Exit the menu'
         Function    = { Write-Output "Exiting menu" }
+        IndentLevel = 0  # No indentation
+    }
+    7 = @{
+        Type        = 'Separator'
+        Text        = ''
+        IndentLevel = 0  # No indentation
     }
 }
 
